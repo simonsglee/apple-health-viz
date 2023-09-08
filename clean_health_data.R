@@ -124,4 +124,3 @@ x <- df_sleep_bedtime$bedtime
 date(x) <- as.Date("2000-01-01") + df_sleep_bedtime$diff1
 
 df_sleep_bedtime$bedtime <- x
-

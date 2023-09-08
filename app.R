@@ -1,5 +1,3 @@
-library(tidyverse)
-
 # load library -----------------------------------------------------------------
 library(tidyverse)
 library(here)
@@ -80,6 +78,14 @@ server <- function(input, output) {
     
     output$weightPlot <- renderPlot({
         
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Weight Plot"), 
+            need(length(df_weight$date[df_weight$date >= input$dateRange2[1] & 
+                                           df_weight$date <= input$dateRange2[2]]) >= 7, 
+                 "Need at least 7 data points to create Weight Plot")
+        )
+
         df_weight %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
             mutate(roll_avg = rollmean(value, k = 7, fill = NA, align = "right")) %>%
@@ -99,12 +105,19 @@ server <- function(input, output) {
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
                 axis.title.x = element_text()
-            ) 
-        
+            )
         
     })
     
     output$vo2Plot <- renderPlot({
+        
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create VO2Max Plot"), 
+            need(length(df_weight$date[df_vo2$date >= input$dateRange2[1] & 
+                                           df_vo2$date <= input$dateRange2[2]]) >= 7, 
+                 "Need at least 7 data points to create VO2Max Plot")
+        )
         
         df_vo2 %>% 
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
@@ -129,7 +142,10 @@ server <- function(input, output) {
     })
     
     output$energyPlot <- renderPlot({
-        
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Active Calories Plot")
+            )
         df_active_energy %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
             group_by(date) %>%
@@ -163,6 +179,10 @@ server <- function(input, output) {
     })
     
     output$exercisePlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Exercise Plot")
+        )
         
         df_exercise %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
@@ -197,6 +217,10 @@ server <- function(input, output) {
     })
     
     output$mindfulnessPlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Mindfulness by Week Plot")
+        )
         
         # mindfulness by week
         df_mindfulness %>%
@@ -228,6 +252,12 @@ server <- function(input, output) {
     })
     
     output$mindfulnessCalendarPlot <- renderPlot({
+        
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Mindfulness by Week Plot")
+        )
+        
         daily_meds <- 
             df_mindfulness %>%
             group_by(date = lubridate::floor_date(date, "day")) %>%
@@ -254,6 +284,11 @@ server <- function(input, output) {
     })
     
     output$sleepByWeekPlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Sleep by Week Plot")
+        )
+        
         df_sleep_long %>%
             group_by(
                 month_year = lubridate::floor_date(date, 
@@ -285,6 +320,10 @@ server <- function(input, output) {
     })
     
     output$sleepTimeCalendarPlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Sleep Calendar Plot")
+        )
         
         df_sleep <- 
             df_sleep_wide %>%
@@ -313,19 +352,31 @@ server <- function(input, output) {
         data_fills[sleep_data$Asleep >= 8] <- "8+"
         data_fills[sleep_data$Asleep == 0] <- "NA"
         
+        fill_colours = c("#D6EAF8", "#85C1E9", "#3498DB", "#2874A6", "#F5B7B1")
+        
+        validate(
+            need(length(unique(data_fills)) == length(fill_colours),
+                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        )
+        
         # Calendar
         calendR(start_date = input$dateRange2[1],
                 end_date = input$dateRange2[2],
                 start = "M",
                 special.days = data_fills,
-                special.col = c("#D6EAF8", "#85C1E9", "#3498DB", "#2874A6", "#F5B7B1"),
+                special.col = fill_colours,
                 legend.pos = "bottom",
                 title = "Sleep Hours Tracker")
         
     })
     
     output$sleepDeepPercentCalendarPlot <- renderPlot({
-
+        
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Deep Sleep Calendar Plot")
+        )
+        
         df_sleep <- 
             df_sleep_wide %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2])
@@ -354,17 +405,28 @@ server <- function(input, output) {
         data_fills[sleep_data$DeepPercent >= 20] <- "E: 20%+"
         data_fills[sleep_data$DeepPercent == 0] <- "NA"
         
+        fill_colours = c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1")
+        
+        validate(
+            need(length(unique(data_fills)) == length(fill_colours),
+                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        )
+        
         # Calendar
         calendR(start_date = input$dateRange2[1],
                 end_date = input$dateRange2[2],
                 start = "M",
                 special.days = data_fills,
-                special.col = c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1"),
+                special.col = fill_colours,
                 legend.pos = "bottom",
                 title = "Deep Sleep % Tracker") 
     })
     
     output$sleepDeepAmountCalendarPlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Deep Sleep Calendar Plot")
+        )
         
         df_sleep <- 
             df_sleep_wide %>%
@@ -394,17 +456,28 @@ server <- function(input, output) {
         data_fills[sleep_data$AsleepDeep >= 1] <- "E: 60+"
         data_fills[sleep_data$AsleepDeep == 0] <- "NA"
         
+        fill_colours = c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1")
+        
+        validate(
+            need(length(unique(data_fills)) == length(fill_colours),
+                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        )
+        
         # Calendar
         calendR(start_date = input$dateRange2[1],
                 end_date = input$dateRange2[2],
                 start = "M",
                 special.days = data_fills,
-                special.col = c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1"),
+                special.col = fill_colours,
                 legend.pos = "bottom",
                 title = "Deep Sleep Minutes Tracker") 
     })
     
     output$sleepStagePlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Sleep Stage Plot")
+        )
         
         df_sleep_wide %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
@@ -435,8 +508,13 @@ server <- function(input, output) {
     })
     
     output$sleepBedtimePlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Bedtime Plot")
+        )
         
         df_sleep_bedtime %>%
+            filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
             mutate(roll_avg = as_datetime(rollmean(bedtime, k = 7, fill = NA, align = "right"), tz = "EST")) %>%
             ggplot(aes(date, y = as_datetime(bedtime, tz = "EST"))) + 
             geom_point() +
