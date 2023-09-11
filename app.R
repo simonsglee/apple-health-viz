@@ -9,6 +9,7 @@ library(shiny)
 library(bslib)
 library(calendR)
 library(ggthemes)
+library(shinyWidgets)
 
 # source data cleaning script --------------------------------------------------
 source(here("clean_health_data.R"))
@@ -38,6 +39,15 @@ ui <- fluidPage(
                        separator = " - ", format = "dd/mm/yy",
                        startview = 'year', language = 'en', weekstart = 1
             ),
+            
+            sliderTextInput(
+                inputId = "range",
+                choices = seq(6, 9, 0.5), 
+                selected = 7, 
+                label = "Sleep Goal (Hours)",
+                grid = TRUE
+            ),
+            style = "position:fixed;width:22%;",
             width = 3
         )
         ,
