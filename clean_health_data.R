@@ -67,7 +67,7 @@ df_active_energy <-
 df_mindfulness <-
     df_record %>% 
     filter(type == "MindfulSession") %>% 
-    mutate(value = as.numeric((endDate - startDate) / 60))
+    mutate(value = interval(startDate, endDate) %/% minutes(1))
 
 
 # sleep
@@ -77,6 +77,7 @@ df_sleep_wide <-
         type == "SleepAnalysis",
         str_detect(sourceName, "Watch")
     ) %>%
+    mutate(date = as_date(creationDate)) %>%
     mutate(value = str_replace(value, "HKCategoryValueSleepAnalysis", "")) %>%
     arrange(desc(endDate)) %>%
     mutate(sleep_value = as.numeric((endDate - startDate)/60)) %>%
@@ -97,6 +98,7 @@ df_sleep_long <-
         type == "SleepAnalysis",
         str_detect(sourceName, "Watch")
     ) %>%
+    mutate(date = as_date(creationDate)) %>%
     mutate(value = str_replace(value, "HKCategoryValueSleepAnalysis", "")) %>%
     arrange(desc(endDate)) %>%
     mutate(sleep_value = as.numeric((endDate - startDate)/60)) %>%
@@ -111,16 +113,32 @@ df_sleep_bedtime <-
         type == "SleepAnalysis",
         str_detect(sourceName, "Watch")
     ) %>%
+    mutate(date = as_date(creationDate)) %>%
     mutate(value = str_replace(value, "HKCategoryValueSleepAnalysis", "")) %>%
     arrange(desc(endDate)) %>%
     group_by(date) %>%
-    summarise(bedtime = min(startDate)) %>%
+    summarise(
+        bedtime = min(startDate),
+        waketime = max(endDate)) %>%
     ungroup() %>%
     mutate(diff1 = as_date(bedtime) - date) %>%
-    mutate(time_only = hms::as_hms(bedtime))
+    mutate(time_only_bed = hms::as_hms(bedtime)) %>%
+    mutate(time_only_wake = hms::as_hms(waketime))
 
+# unify dates to 2000-01-01
 x <- df_sleep_bedtime$bedtime
-
 date(x) <- as.Date("2000-01-01") + df_sleep_bedtime$diff1
-
 df_sleep_bedtime$bedtime <- x
+
+y <- df_sleep_bedtime$waketime
+date(y) <- as.Date("2000-01-02")
+df_sleep_bedtime$waketime <- y
+
+# pivot longer
+df_sleep_bedtime_long <-
+    df_sleep_bedtime %>%
+    pivot_longer(
+        cols = c("bedtime", "waketime"),
+        names_to = "time_type",
+        values_to = "time"
+    )

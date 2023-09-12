@@ -41,7 +41,7 @@ ui <- fluidPage(
             ),
             
             sliderTextInput(
-                inputId = "range",
+                inputId = "sleepGoal",
                 choices = seq(6, 9, 0.5), 
                 selected = 7, 
                 label = "Sleep Goal (Hours)",
@@ -70,6 +70,8 @@ ui <- fluidPage(
             plotOutput(outputId = "sleepByWeekPlot"),
             br(),
             plotOutput(outputId = "sleepTimeCalendarPlot"),
+            br(),
+            plotOutput(outputId = "sleepTimeGoalCalendarPlot"),
             br(),
             plotOutput(outputId = "sleepDeepPercentCalendarPlot"),
             br(),
@@ -175,7 +177,7 @@ server <- function(input, output) {
             geom_bar(fill = "#CC79A7", stat = "identity", alpha = 1) +
             theme_fivethirtyeight() +
             labs(
-                title = "Active Calories",
+                title = "Active Calories by Weei",
                 x = "Week",
                 y = "Active Calories"
             ) +
@@ -213,7 +215,7 @@ server <- function(input, output) {
             geom_bar(fill = "#7DCEA0", stat = "identity", alpha = 1) +
             theme_fivethirtyeight() +
             labs(
-                title = "Exercise",
+                title = "Exercise by Week",
                 x = "Week",
                 y = "Minutes"
             ) +
@@ -235,7 +237,6 @@ server <- function(input, output) {
         # mindfulness by week
         df_mindfulness %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
-            mutate(value = (endDate - startDate) / 60) %>%
             group_by(
                 month_year = lubridate::floor_date(date, 
                                                    "week",
@@ -249,7 +250,7 @@ server <- function(input, output) {
             scale_x_date(breaks = scales::breaks_pretty(10)) + 
             theme_fivethirtyeight() +
             labs(
-                title = "Mindfulness",
+                title = "Mindfulness by Week",
                 x = "Week",
                 y = "Minutes"
             ) +
@@ -280,7 +281,7 @@ server <- function(input, output) {
         
         med_data <- 
             dates %>% 
-            left_join(daily_meds) %>%
+            left_join(daily_meds, by = "date") %>%
             mutate(value = replace_na(value, 0))
         
         calendR(start_date = input$dateRange2[1],
@@ -290,7 +291,7 @@ server <- function(input, output) {
                 gradient = TRUE,
                 low.col = "#FFFFFF",
                 special.col = "#6495ED",
-                title = "Meditation Tracker") 
+                title = "Meditation Calendar") 
     })
     
     output$sleepByWeekPlot <- renderPlot({
@@ -344,7 +345,7 @@ server <- function(input, output) {
         
         sleep_data <- 
             dates %>%
-            left_join(filter(df_sleep)) %>%
+            left_join(df_sleep, by = "date") %>%
             mutate(AsleepCore = replace_na(AsleepCore, 0),
                    AsleepDeep = replace_na(AsleepDeep, 0),
                    AsleepREM = replace_na(AsleepREM, 0),
@@ -362,21 +363,83 @@ server <- function(input, output) {
         data_fills[sleep_data$Asleep >= 8] <- "8+"
         data_fills[sleep_data$Asleep == 0] <- "NA"
         
-        fill_colours = c("#D6EAF8", "#85C1E9", "#3498DB", "#2874A6", "#F5B7B1")
+        # category and filters for when there is no data points
+        data_category <- c("< 6", "6-7", "7-8", "8+", "NA")
         
-        validate(
-            need(length(unique(data_fills)) == length(fill_colours),
-                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
-        )
+        data_filter <- c()
+        
+        for(c in data_category){
+            if (c %in% data_fills) {
+                data_filter <- append(data_filter, TRUE)
+            } else {
+                data_filter <- append(data_filter, FALSE)
+            }
+        }
+        
+        fill_colours <- c("#D6EAF8", "#85C1E9", "#3498DB", "#2874A6", "#F5B7B1")
+        
+        # validate(
+        #     need(length(unique(data_fills)) == length(fill_colours),
+        #          "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        # )
         
         # Calendar
         calendR(start_date = input$dateRange2[1],
                 end_date = input$dateRange2[2],
                 start = "M",
                 special.days = data_fills,
-                special.col = fill_colours,
+                special.col = fill_colours[data_filter],
                 legend.pos = "bottom",
-                title = "Sleep Hours Tracker")
+                title = "Sleep Hours Calendar")
+        
+    })
+    
+    output$sleepTimeGoalCalendarPlot <- renderPlot({
+        validate(
+            need(input$dateRange2[1] <= input$dateRange2[2],
+                 "Double check date range to create Sleep Calendar Plot")
+        )
+        
+        df_sleep <- 
+            df_sleep_wide %>%
+            filter(date >= input$dateRange2[1], date <= input$dateRange2[2])
+        
+        dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2[1]), 
+                                        to=as.Date(input$dateRange2[2]), by="day"))
+        
+        sleep_data <- 
+            dates %>%
+            left_join(df_sleep, by = "date") %>%
+            mutate(AsleepCore = replace_na(AsleepCore, 0),
+                   AsleepDeep = replace_na(AsleepDeep, 0),
+                   AsleepREM = replace_na(AsleepREM, 0),
+                   Awake = replace_na(Awake, 0),
+                   InBed = replace_na(InBed, 0),
+                   Asleep = replace_na(Asleep, 0),
+                   DeepPercent = replace_na(DeepPercent, 0)
+            ) 
+        
+        
+        data_fills <- rep(NA, length(dates$date))
+        
+        data_fills[sleep_data$Asleep >= input$sleepGoal] <- "1"
+        data_fills[sleep_data$Asleep < input$sleepGoal] <- "0"
+        
+        fill_colours <- c("#FFFFFF", "#2874A6")
+        
+        validate(
+            need(length(unique(data_fills)) == length(fill_colours),
+                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        )
+        
+        
+        calendR(start_date = input$dateRange2[1],
+                end_date = input$dateRange2[2],
+                start = "M",
+                special.days = data_fills,
+                special.col = fill_colours,
+                title = "Sleep Goal Calendar") 
+        
         
     })
     
@@ -396,7 +459,7 @@ server <- function(input, output) {
         
         sleep_data <- 
             dates %>%
-            left_join(filter(df_sleep)) %>%
+            left_join(df_sleep, by = "date") %>%
             mutate(AsleepCore = replace_na(AsleepCore, 0),
                    AsleepDeep = replace_na(AsleepDeep, 0),
                    AsleepREM = replace_na(AsleepREM, 0),
@@ -415,21 +478,35 @@ server <- function(input, output) {
         data_fills[sleep_data$DeepPercent >= 20] <- "E: 20%+"
         data_fills[sleep_data$DeepPercent == 0] <- "NA"
         
-        fill_colours = c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1")
+        # category and filters for when there is no data points
+        data_category <- c("A: 0%-5%", "B: 5%-10%", "C: 10%-15%", "D: 15%-20%",
+                           "E: 20%+", "NA")
         
-        validate(
-            need(length(unique(data_fills)) == length(fill_colours),
-                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
-        )
+        data_filter <- c()
+        
+        for(c in data_category){
+            if (c %in% data_fills) {
+                data_filter <- append(data_filter, TRUE)
+            } else {
+                data_filter <- append(data_filter, FALSE)
+            }
+        }
+        
+        fill_colours <- c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1")
+        
+        # validate(
+        #     need(length(unique(data_fills)) == length(fill_colours),
+        #          "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        # )
         
         # Calendar
         calendR(start_date = input$dateRange2[1],
                 end_date = input$dateRange2[2],
                 start = "M",
                 special.days = data_fills,
-                special.col = fill_colours,
+                special.col = fill_colours[data_filter],
                 legend.pos = "bottom",
-                title = "Deep Sleep % Tracker") 
+                title = "Deep Sleep % Calendar") 
     })
     
     output$sleepDeepAmountCalendarPlot <- renderPlot({
@@ -447,7 +524,7 @@ server <- function(input, output) {
         
         sleep_data <- 
             dates %>%
-            left_join(filter(df_sleep)) %>%
+            left_join(df_sleep, by = "date") %>%
             mutate(AsleepCore = replace_na(AsleepCore, 0),
                    AsleepDeep = replace_na(AsleepDeep, 0),
                    AsleepREM = replace_na(AsleepREM, 0),
@@ -466,21 +543,34 @@ server <- function(input, output) {
         data_fills[sleep_data$AsleepDeep >= 1] <- "E: 60+"
         data_fills[sleep_data$AsleepDeep == 0] <- "NA"
         
-        fill_colours = c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1")
+        # category and filters for when there is no data points
+        data_category <- c("A: <15", "B: 15-30", "C: 30-45", "D: 45-60",
+                           "E: 60+", "NA")
         
-        validate(
-            need(length(unique(data_fills)) == length(fill_colours),
-                 "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
-        )
+        data_filter <- c()
+        
+        for(c in data_category){
+            if (c %in% data_fills) {
+                data_filter <- append(data_filter, TRUE)
+            } else {
+                data_filter <- append(data_filter, FALSE)
+            }
+        }
+        fill_colours <- c("#E8F8F5", "#A3E4D7", "#48C9B0", "#17A589", "#117864", "#F5B7B1")
+        
+        # validate(
+        #     need(length(unique(data_fills)) == length(fill_colours),
+        #          "Not enough data to create Sleep Calendar. Try selecting longer range of dates")
+        # )
         
         # Calendar
         calendR(start_date = input$dateRange2[1],
                 end_date = input$dateRange2[2],
                 start = "M",
                 special.days = data_fills,
-                special.col = fill_colours,
+                special.col = fill_colours[data_filter],
                 legend.pos = "bottom",
-                title = "Deep Sleep Minutes Tracker") 
+                title = "Deep Sleep Minutes Calendar") 
     })
     
     output$sleepStagePlot <- renderPlot({
@@ -501,7 +591,8 @@ server <- function(input, output) {
                          values_to = "Percent") %>%
             ggplot(aes(date, Percent)) +
             geom_line(aes(group = SleepType, color = SleepType)) +
-            scale_y_continuous(labels = scales::percent) +
+            scale_y_continuous(labels = scales::percent,
+                               breaks = scales::breaks_pretty(20)) +
             scale_x_date(breaks = scales::breaks_pretty(10)) + 
             theme_fivethirtyeight() +
             labs(
@@ -522,21 +613,25 @@ server <- function(input, output) {
             need(input$dateRange2[1] <= input$dateRange2[2],
                  "Double check date range to create Bedtime Plot")
         )
-        
-        df_sleep_bedtime %>%
+            
+            
+            
+        df_sleep_bedtime_long %>%
             filter(date >= input$dateRange2[1], date <= input$dateRange2[2]) %>%
-            mutate(roll_avg = as_datetime(rollmean(bedtime, k = 7, fill = NA, align = "right"), tz = "EST")) %>%
-            ggplot(aes(date, y = as_datetime(bedtime, tz = "EST"))) + 
-            geom_point() +
-            geom_smooth(aes(y = roll_avg, linetype = "7-Day Rolling Average"), 
-                        span = 0.2, col = "#D98880", se = FALSE) +
-            scale_x_date(breaks = scales::breaks_pretty(20)) +
+            ggplot(aes(date, y = as_datetime(time, tz = "EST"))) + 
+            geom_point(aes(colour = time_type)) +
+            scale_x_date(breaks = scales::breaks_pretty(10)) +
             scale_y_datetime(breaks = scales::breaks_pretty(10)) +
             geom_hline(
                 aes(yintercept=as_datetime("2000-01-01 00:00:00", tz = "EST"),
-                    linetype = "Midnight"),
-                color="red"
+                    linetype = "Midnight", color="Midnight")
             ) +
+            geom_hline(
+                aes(yintercept=as_datetime("2000-01-02 07:00:00", tz = "EST"),
+                    linetype = "7:00 AM", color="7:00 AM")
+            ) +
+            facet_wrap(~time_type, scales = "free_y") + 
+            geom_smooth(se=FALSE, colour = "grey30")+
             theme_fivethirtyeight() +
             labs(
                 title = "Bedtime Trend",
@@ -545,10 +640,10 @@ server <- function(input, output) {
             ) +
             theme(
                 plot.title = element_text(hjust = 0.5),
-                axis.title.y = element_text(), 
+                axis.title.y = element_blank(), 
                 axis.title.x = element_text()
             ) 
-
+        
     })
     
 }
