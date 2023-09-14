@@ -177,7 +177,7 @@ server <- function(input, output) {
             geom_bar(fill = "#CC79A7", stat = "identity", alpha = 1) +
             theme_fivethirtyeight() +
             labs(
-                title = "Active Calories by Weei",
+                title = "Active Calories by Week",
                 x = "Week",
                 y = "Active Calories"
             ) +
