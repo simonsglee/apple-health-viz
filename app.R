@@ -398,8 +398,8 @@ server <- function(input, output) {
             left_join(daily_meds, by = "date") %>%
             mutate(value = replace_na(value, 0))
         
-        calendR(start_date = input$dateRange2Mindfulness[1],
-                end_date = input$dateRange2Mindfulness[2],
+        calendR(from = input$dateRange2Mindfulness[1],
+                to = input$dateRange2Mindfulness[2],
                 start = "M",
                 special.days = med_data$value,
                 gradient = TRUE,
@@ -498,8 +498,8 @@ server <- function(input, output) {
         # )
         
         # Calendar
-        calendR(start_date = input$dateRange2Sleep[1],
-                end_date = input$dateRange2Sleep[2],
+        calendR(from = input$dateRange2Sleep[1],
+                to = input$dateRange2Sleep[2],
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours[data_filter],
@@ -547,8 +547,8 @@ server <- function(input, output) {
         )
         
         
-        calendR(start_date = input$dateRange2Sleep[1],
-                end_date = input$dateRange2Sleep[2],
+        calendR(from = input$dateRange2Sleep[1],
+                to = input$dateRange2Sleep[2],
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours,
@@ -614,8 +614,8 @@ server <- function(input, output) {
         # )
         
         # Calendar
-        calendR(start_date = input$dateRange2Sleep[1],
-                end_date = input$dateRange2Sleep[2],
+        calendR(from = input$dateRange2Sleep[1],
+                to = input$dateRange2Sleep[2],
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours[data_filter],
@@ -678,8 +678,8 @@ server <- function(input, output) {
         # )
         
         # Calendar
-        calendR(start_date = input$dateRange2Sleep[1],
-                end_date = input$dateRange2Sleep[2],
+        calendR(from = input$dateRange2Sleep[1],
+                to = input$dateRange2Sleep[2],
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours[data_filter],
