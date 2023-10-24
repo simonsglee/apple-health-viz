@@ -17,6 +17,14 @@ if(file.exists(here("data/apple_health_export/export.xml"))) {
                                            stringsAsFactors = FALSE) %>%
         as_tibble()
     
+    df_workout <- XML:::xmlAttrsToDataFrame(health_xml["//Workout"], 
+                                           stringsAsFactors = FALSE) %>%
+        as_tibble()
+    
+    df_workout_summary <- XML:::xmlAttrsToDataFrame(health_xml["//ActivitySummary"], 
+                                            stringsAsFactors = FALSE) %>%
+        as_tibble()
+    
     # clean data
     # change data types
     df_record <-
@@ -31,7 +39,19 @@ if(file.exists(here("data/apple_health_export/export.xml"))) {
             year = year(endDate),
             value = value
         )
-} else {
+    
+    df_workout <-
+        df_workout %>%
+        mutate(
+            workoutActivityType = str_remove(workoutActivityType, "HKWorkoutActivityType"),
+            creationDate = ymd_hms(creationDate, tz = "America/Toronto"),
+            startDate = ymd_hms(startDate, tz = "America/Toronto"),
+            endDate = ymd_hms(endDate, tz = "America/Toronto"),
+            date = date(startDate),
+            year = year(endDate),
+            duration = as.numeric(duration)
+        )
+    } else {
     
     df_record <- read_rds(here("data/random_health_data.RDS"))
     

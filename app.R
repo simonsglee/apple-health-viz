@@ -59,6 +59,14 @@ ui <-
                                 separator = " - ", format = "dd/mm/yy",
                                 startview = 'year', language = 'en', 
                                 weekstart = 1),
+                            
+                            sliderTextInput(
+                                inputId = "exerciseNumber",
+                                choices = seq(1, length(unique(df_workout$workoutActivityType)), 1), 
+                                selected = 3, 
+                                label = "# of Exercises to Show",
+                                grid = TRUE),
+                            
                             style = "position:fixed;width:22%;",
                             width = 3),
                         # main panel
@@ -69,11 +77,12 @@ ui <-
                             br(),
                             plotOutput(outputId = "exercisePlot"),
                             br(),
+                            plotOutput(outputId = "exerciseDurationPlot"),
+                            br(),
                             width = 8
                             )
                         ),
                tabPanel("Mindfulness",
-                        # sidebar panel
                         # sidebar panel
                         sidebarPanel(
                             dateRangeInput(
@@ -283,6 +292,56 @@ server <- function(input, output) {
         
     })
     
+    output$exerciseDurationPlot <- renderPlot({
+        validate(
+            need(input$dateRange2Activity[1] <= input$dateRange2Activity[2],
+                 "Double check date range to create Exercise Plot")
+        )
+        
+        # find top n workouts
+        df_top_n_workouts <-
+            df_workout %>%
+            group_by(workoutActivityType) %>%
+            summarise(
+                duration = sum(duration)
+            ) %>%
+            arrange(desc(duration)) %>%
+            top_n(input$exerciseNumber)
+        
+        # replace non top n with Other category
+        df_workout <-
+            df_workout %>%
+            mutate(workoutType = ifelse(workoutActivityType %in% df_top_n_workouts$workoutActivityType, 
+                                        workoutActivityType, 
+                                        "Other"))
+        # plot workout duration by type
+        df_workout %>% 
+            group_by(week = floor_date(date, 
+                                       "week",
+                                       week_start = getOption("lubridate.week.start", 1)),
+                     workoutType) %>%
+            summarise(
+                duration = sum(duration)
+            ) %>%
+            ggplot(aes(week, duration, fill = workoutType)) +
+            scale_x_date(breaks = scales::breaks_pretty(10)) + 
+            geom_bar(stat = "identity", 
+                     position = "stack",
+                     aes(group = workoutType)) +
+            theme_fivethirtyeight() +
+            labs(
+                title = "Exercise Type by Week",
+                x = "Week",
+                y = "Minutes"
+            ) +
+            theme(
+                legend.position="bottom",
+                plot.title = element_text(hjust = 0.5),
+                axis.title.y = element_text(), 
+                axis.title.x = element_text()
+            ) 
+    })
+    
     output$mindfulnessPlot <- renderPlot({
         validate(
             need(input$dateRange2Mindfulness[1] <= input$dateRange2Mindfulness[2],
@@ -328,7 +387,7 @@ server <- function(input, output) {
             df_mindfulness %>%
             group_by(date = lubridate::floor_date(date, "day")) %>%
             summarise(
-                value = as.integer(sum(value) > 0)
+                value = n_distinct(date)
             )
         
         dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2Mindfulness[1]), 
