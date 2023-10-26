@@ -261,7 +261,8 @@ server <- function(input, output) {
         )
         
         df_exercise %>%
-            filter(date >= input$dateRange2Activity[1], date <= input$dateRange2Activity[2]) %>%
+            filter(date >= input$dateRange2Activity[1], 
+                   date <= input$dateRange2Activity[2]) %>%
             group_by(date) %>%
             summarise(
                 value = sum(value)
@@ -316,6 +317,8 @@ server <- function(input, output) {
                                         "Other"))
         # plot workout duration by type
         df_workout %>% 
+            filter(date >= input$dateRange2Activity[1], 
+                   date <= input$dateRange2Activity[2]) %>%
             group_by(week = floor_date(date, 
                                        "week",
                                        week_start = getOption("lubridate.week.start", 1)),
@@ -350,7 +353,8 @@ server <- function(input, output) {
         
         # mindfulness by week
         df_mindfulness %>%
-            filter(date >= input$dateRange2Mindfulness[1], date <= input$dateRange2Mindfulness[2]) %>%
+            filter(date >= input$dateRange2Mindfulness[1], 
+                   date <= input$dateRange2Mindfulness[2]) %>%
             group_by(
                 month_year = lubridate::floor_date(date, 
                                                    "week",
@@ -390,16 +394,23 @@ server <- function(input, output) {
                 value = n_distinct(date)
             )
         
-        dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2Mindfulness[1]), 
-                                        to=as.Date(input$dateRange2Mindfulness[2]), by="day"))
+        # edit last 12 months to avoid one year limit on calendR function
+        end_date <- input$dateRange2Mindfulness[2]
+        start_date <- max(input$dateRange2Mindfulness[1] , end_date - 366)
+        
+        month(start_date) <- month(start_date) + 1
+        start_date <- floor_date(start_date, unit = "month")
+        
+        dates <- tibble(date = seq.Date(from = start_date, 
+                                        to = end_date, by="day"))
         
         med_data <- 
             dates %>% 
             left_join(daily_meds, by = "date") %>%
             mutate(value = replace_na(value, 0))
         
-        calendR(from = input$dateRange2Mindfulness[1],
-                to = input$dateRange2Mindfulness[2],
+        calendR(from = start_date,
+                to = end_date,
                 start = "M",
                 special.days = med_data$value,
                 gradient = TRUE,
@@ -415,6 +426,10 @@ server <- function(input, output) {
         )
         
         df_sleep_long %>%
+            filter(
+                date >= input$dateRange2Sleep[1],
+                date <= input$dateRange2Sleep[2]
+            ) %>%
             group_by(
                 month_year = lubridate::floor_date(date, 
                                                    "week",
@@ -450,12 +465,19 @@ server <- function(input, output) {
                  "Double check date range to create Sleep Calendar Plot")
         )
         
+        # edit last 12 months to avoid one year limit on calendR function
+        end_date <- input$dateRange2Sleep[2]
+        start_date <- max(input$dateRange2Sleep[1] , end_date - 366)
+        
+        month(start_date) <- month(start_date) + 1
+        start_date <- floor_date(start_date, unit = "month")
+        
+        dates <- tibble(date = seq.Date(from = start_date, 
+                                        to = end_date, by="day"))
+        
         df_sleep <- 
             df_sleep_wide %>%
-            filter(date >= input$dateRange2Sleep[1], date <= input$dateRange2Sleep[2])
-        
-        dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2Sleep[1]), 
-                                        to=as.Date(input$dateRange2Sleep[2]), by="day"))
+            filter(date >= start_date, date <= end_date)
         
         sleep_data <- 
             dates %>%
@@ -498,8 +520,8 @@ server <- function(input, output) {
         # )
         
         # Calendar
-        calendR(from = input$dateRange2Sleep[1],
-                to = input$dateRange2Sleep[2],
+        calendR(from = start_date,
+                to = end_date,
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours[data_filter],
@@ -514,12 +536,19 @@ server <- function(input, output) {
                  "Double check date range to create Sleep Calendar Plot")
         )
         
+        # edit last 12 months to avoid one year limit on calendR function
+        end_date <- input$dateRange2Sleep[2]
+        start_date <- max(input$dateRange2Sleep[1] , end_date - 366)
+        
+        month(start_date) <- month(start_date) + 1
+        start_date <- floor_date(start_date, unit = "month")
+        
+        dates <- tibble(date = seq.Date(from = start_date, 
+                                        to = end_date, by="day"))
+        
         df_sleep <- 
             df_sleep_wide %>%
-            filter(date >= input$dateRange2Sleep[1], date <= input$dateRange2Sleep[2])
-        
-        dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2Sleep[1]), 
-                                        to=as.Date(input$dateRange2Sleep[2]), by="day"))
+            filter(date >= start_date, date <= end_date)
         
         sleep_data <- 
             dates %>%
@@ -547,13 +576,12 @@ server <- function(input, output) {
         )
         
         
-        calendR(from = input$dateRange2Sleep[1],
-                to = input$dateRange2Sleep[2],
+        calendR(from = start_date,
+                to = end_date,
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours,
                 title = "Sleep Goal Calendar") 
-        
         
     })
     
@@ -564,12 +592,19 @@ server <- function(input, output) {
                  "Double check date range to create Deep Sleep Calendar Plot")
         )
         
+        # edit last 12 months to avoid one year limit on calendR function
+        end_date <- input$dateRange2Sleep[2]
+        start_date <- max(input$dateRange2Sleep[1] , end_date - 366)
+        
+        month(start_date) <- month(start_date) + 1
+        start_date <- floor_date(start_date, unit = "month")
+        
+        dates <- tibble(date = seq.Date(from = start_date, 
+                                        to = end_date, by="day"))
+        
         df_sleep <- 
             df_sleep_wide %>%
-            filter(date >= input$dateRange2Sleep[1], date <= input$dateRange2Sleep[2])
-        
-        dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2Sleep[1]), 
-                                        to=as.Date(input$dateRange2Sleep[2]), by="day"))
+            filter(date >= start_date, date <= end_date)
         
         sleep_data <- 
             dates %>%
@@ -614,8 +649,8 @@ server <- function(input, output) {
         # )
         
         # Calendar
-        calendR(from = input$dateRange2Sleep[1],
-                to = input$dateRange2Sleep[2],
+        calendR(from = start_date,
+                to = end_date,
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours[data_filter],
@@ -629,12 +664,19 @@ server <- function(input, output) {
                  "Double check date range to create Deep Sleep Calendar Plot")
         )
         
+        # edit last 12 months to avoid one year limit on calendR function
+        end_date <- input$dateRange2Sleep[2]
+        start_date <- max(input$dateRange2Sleep[1] , end_date - 366)
+        
+        month(start_date) <- month(start_date) + 1
+        start_date <- floor_date(start_date, unit = "month")
+        
+        dates <- tibble(date = seq.Date(from = start_date, 
+                                        to = end_date, by="day"))
+        
         df_sleep <- 
             df_sleep_wide %>%
-            filter(date >= input$dateRange2Sleep[1], date <= input$dateRange2Sleep[2])
-        
-        dates <- tibble(date = seq.Date(from=as.Date(input$dateRange2Sleep[1]), 
-                                        to=as.Date(input$dateRange2Sleep[2]), by="day"))
+            filter(date >= start_date, date <= end_date)
         
         sleep_data <- 
             dates %>%
@@ -678,8 +720,8 @@ server <- function(input, output) {
         # )
         
         # Calendar
-        calendR(from = input$dateRange2Sleep[1],
-                to = input$dateRange2Sleep[2],
+        calendR(from = start_date,
+                to = end_date,
                 start = "M",
                 special.days = data_fills,
                 special.col = fill_colours[data_filter],
