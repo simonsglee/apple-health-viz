@@ -38,6 +38,11 @@ ui <-
                                 separator = " - ", format = "dd/mm/yy",
                                 startview = 'year', language = 'en', 
                                 weekstart = 1),
+                            radioGroupButtons(
+                                inputId = "WeightUnit",
+                                label = "Unit", 
+                                choices = c("lb", "kg"),
+                                status = "primary"),
                             style = "position:fixed;width:22%;",
                             width = 3),
                         # main panel
@@ -161,7 +166,17 @@ server <- function(input, output) {
                                            df_weight$date <= input$dateRange2Weight[2]]) >= 7, 
                  "Need at least 7 data points to create Weight Plot")
         )
-
+        
+        if (input$WeightUnit == "lb") {
+            df_weight <-
+                df_weight %>%
+                    mutate(value = if_else(unit == "kg", value * 2.20462, value))
+        } else {
+            df_weight <-
+                df_weight %>%
+                mutate(value = if_else(unit == "lb", value / 2.20462, value))
+        }
+        
         df_weight %>%
             filter(date >= input$dateRange2Weight[1], date <= input$dateRange2Weight[2]) %>%
             mutate(roll_avg = rollmean(value, k = 7, fill = NA, align = "right")) %>%
@@ -172,7 +187,7 @@ server <- function(input, output) {
             labs(
                 title = "Weight Trend",
                 x = "Date",
-                y = "lbs"
+                y = input$WeightUnit
             ) +
             scale_x_date(breaks = scales::breaks_pretty(10)) + 
             theme_fivethirtyeight() +
