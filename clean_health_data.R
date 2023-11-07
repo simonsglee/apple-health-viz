@@ -53,8 +53,9 @@ if(file.exists(here("data/apple_health_export/export.xml"))) {
         )
     } else {
     
-    df_record <- read_rds(here("data/random_health_data.RDS"))
+    df_record <- read_rds(here("data/random_df_record.RDS"))
     
+    df_workout <- read_rds(here("data/random_df_workout.RDS"))
 }
 
 # create DataFrames needed for visualizations ----------------------------------
