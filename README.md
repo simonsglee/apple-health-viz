@@ -3,8 +3,8 @@
 ## Project Description
 This is my personal R Shiny dashboard for visualizing health and fitness data gathered through my iPhone and Apple Watch. The data I'm personally interested in monitoring are exercise, weight, mindfulness meditation and sleep. Please feel free to borrow code to create visuals for other metrics you are interested in.
 
-## Screenshots
-Coming soon.
+## Demo
+You can see a demo of the Shiny Dashboard using fictional data [here](https://simonsglee.shinyapps.io/apple-health-viz/)
 
 ## Installation
 Here are the steps you need to follow if you want to visualize your own data with this dashboard. 
