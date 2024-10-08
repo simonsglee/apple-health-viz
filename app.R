@@ -10,6 +10,7 @@ library(bslib)
 library(calendR)
 library(ggthemes)
 library(shinyWidgets)
+library(DT)
 
 # source data cleaning script --------------------------------------------------
 source(here("clean_health_data.R"))
@@ -22,7 +23,7 @@ df_watch <-
     df_record %>%
     filter(str_detect(sourceName, "Watch")) 
 
-# UI ---------------------------------------------------------------------------
+# UI ---------------------------------------------------------------------------    
 ui <- 
     navbarPage("Apple Health Viz",
                tabPanel("Weight",
@@ -31,7 +32,8 @@ ui <-
                             dateRangeInput(
                                 "dateRange2Weight",
                                 label = paste("Date Range"),
-                                start = min(df_watch$date), 
+                                start = max(max(df_watch$date) - years(1), 
+                                            min(df_watch$date)),
                                 end = max(df_watch$date),
                                 min = min(df_watch$date), 
                                 max = max(df_watch$date),
@@ -48,6 +50,8 @@ ui <-
                         # main panel
                         mainPanel(
                                 plotOutput(outputId = "weightPlot"),
+                                br(),
+                                dataTableOutput(outputId = "weightTable"),
                                 width = 8
                                 )
                         ),
@@ -57,7 +61,8 @@ ui <-
                             dateRangeInput(
                                 "dateRange2Activity",
                                 label = paste("Date Range"),
-                                start = min(df_watch$date), 
+                                start = max(max(df_watch$date) - years(1), 
+                                            min(df_watch$date)),
                                 end = max(df_watch$date),
                                 min = min(df_watch$date), 
                                 max = max(df_watch$date),
@@ -71,6 +76,13 @@ ui <-
                                 selected = 3, 
                                 label = "# of Exercises to Show",
                                 grid = TRUE),
+                            
+                            selectInput(
+                                inputId = "selectedExercise",
+                                label = "Select Exercise (Last Graph Only)",
+                                choices = sort(c("ALL", unique(df_workout$workoutActivityType))),
+                                selected = "ALL"
+                            ),
                             
                             style = "position:fixed;width:22%;",
                             width = 3),
@@ -93,7 +105,8 @@ ui <-
                             dateRangeInput(
                                 "dateRange2Mindfulness",
                                 label = paste("Date Range"),
-                                start = min(df_watch$date), 
+                                start = max(max(df_watch$date) - years(1), 
+                                            min(df_watch$date)),
                                 end = max(df_watch$date),
                                 min = min(df_watch$date), 
                                 max = max(df_watch$date),
@@ -118,7 +131,8 @@ ui <-
                             dateRangeInput(
                                 "dateRange2Sleep",
                                 label = paste("Date Range"),
-                                start = min(df_watch$date), 
+                                start = max(max(df_watch$date) - years(1), 
+                                            min(df_watch$date)),
                                 end = max(df_watch$date),
                                 min = min(df_watch$date), 
                                 max = max(df_watch$date),
@@ -182,14 +196,16 @@ server <- function(input, output) {
             mutate(roll_avg = rollmean(value, k = 7, fill = NA, align = "right")) %>%
             ggplot(aes(x = date)) +
             geom_point(aes(y = value), colour = "#0072B2", alpha = 0.9) +
-            geom_smooth(aes(y = roll_avg, linetype = "7-Day Rolling Average"), 
-                        span = 0.2, col = "grey30", se = FALSE) +
+            # geom_smooth(aes(y = roll_avg, linetype = "7-Day Rolling Average"), 
+            #             span = 0.2, col = "grey30", se = FALSE) +
+            geom_line(aes(y = roll_avg, linetype = "7-Day Rolling Average")) +
             labs(
                 title = "Weight Trend",
                 x = "Date",
                 y = input$WeightUnit
             ) +
             scale_x_date(breaks = scales::breaks_pretty(10)) + 
+            scale_y_continuous(breaks = scales::breaks_pretty(10)) + 
             theme_fivethirtyeight() +
             theme(
                 legend.position="bottom",
@@ -198,6 +214,39 @@ server <- function(input, output) {
                 axis.title.x = element_text()
             )
         
+    })
+    
+    df_weight_table <- reactive({
+        
+        req(input$dateRange2Weight, input$WeightUnit)
+        
+        if (input$WeightUnit == "lb") {
+            df_weight <-
+                df_weight %>%
+                mutate(value = if_else(unit == "kg", value * 2.20462, value))
+        } else {
+            df_weight <-
+                df_weight %>%
+                mutate(value = if_else(unit == "lb", value / 2.20462, value))
+        }
+    
+        df_weight_table <- 
+            df_weight %>% 
+            filter(
+                date >= as_date(input$dateRange2Weight[1]),
+                date <= as_date(input$dateRange2Weight[2])
+                ) %>%
+            mutate(roll_avg = rollmean(value, k = 7, fill = NA, align = "right")) %>%
+            select(date, value, roll_avg) %>%
+            mutate(roll_avg = round(roll_avg, 1)) %>%
+            arrange(desc(date))
+        
+        df_weight_table
+    })
+    
+    output$weightTable <- DT::renderDataTable({
+
+        df_weight_table()
     })
     
     output$vo2Plot <- renderPlot({
@@ -237,8 +286,10 @@ server <- function(input, output) {
             need(input$dateRange2Activity[1] <= input$dateRange2Activity[2],
                  "Double check date range to create Active Calories Plot")
             )
+        
         df_active_energy %>%
-            filter(date >= input$dateRange2Activity[1], date <= input$dateRange2Activity[2]) %>%
+            filter(date >= input$dateRange2Activity[1], 
+                   date <= input$dateRange2Activity[2]) %>%
             group_by(date) %>%
             summarise(
                 value = sum(value)
@@ -247,7 +298,7 @@ server <- function(input, output) {
                 month_year = lubridate::floor_date(date, 
                                                    "week",
                                                    week_start = getOption("lubridate.week.start", 1)
-            )) %>%
+                )) %>%
             summarise(
                 value = sum(value)
             ) %>%
@@ -265,7 +316,8 @@ server <- function(input, output) {
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
                 axis.title.x = element_text()
-            ) 
+            )
+        
         
     })
     
@@ -324,14 +376,23 @@ server <- function(input, output) {
             arrange(desc(duration)) %>%
             top_n(input$exerciseNumber)
         
-        # replace non top n with Other category
-        df_workout <-
-            df_workout %>%
-            mutate(workoutType = ifelse(workoutActivityType %in% df_top_n_workouts$workoutActivityType, 
-                                        workoutActivityType, 
-                                        "Other"))
+        if (input$selectedExercise == "ALL") {
+            # replace non top n with Other category
+            df_workout_viz <-
+                df_workout %>%
+                mutate(workoutType = ifelse(workoutActivityType %in% df_top_n_workouts$workoutActivityType, 
+                                            workoutActivityType, 
+                                            "Other"))
+            
+        } else {
+            df_workout_viz <-
+                df_workout %>%
+                filter(workoutActivityType == input$selectedExercise) %>%
+                mutate(workoutType = workoutActivityType)
+        }
+        
         # plot workout duration by type
-        df_workout %>% 
+        df_workout_viz %>% 
             filter(date >= input$dateRange2Activity[1], 
                    date <= input$dateRange2Activity[2]) %>%
             group_by(week = floor_date(date, 
