@@ -100,6 +100,7 @@ df_sleep_wide <-
     ) %>%
     mutate(date = as_date(creationDate)) %>%
     mutate(value = str_replace(value, "HKCategoryValueSleepAnalysis", "")) %>%
+    filter(value != "AsleepUnspecified") %>%
     arrange(desc(endDate)) %>%
     mutate(sleep_value = as.numeric((endDate - startDate)/60)) %>%
     select(year, value, date, startDate, endDate, sleep_value) %>%
@@ -121,6 +122,7 @@ df_sleep_long <-
     ) %>%
     mutate(date = as_date(creationDate)) %>%
     mutate(value = str_replace(value, "HKCategoryValueSleepAnalysis", "")) %>%
+    filter(value != "AsleepUnspecified") %>%
     arrange(desc(endDate)) %>%
     mutate(sleep_value = as.numeric((endDate - startDate)/60)) %>%
     select(year, value, date, startDate, endDate, sleep_value) %>%
@@ -136,6 +138,8 @@ df_sleep_bedtime <-
     ) %>%
     mutate(date = as_date(creationDate)) %>%
     mutate(value = str_replace(value, "HKCategoryValueSleepAnalysis", "")) %>%
+    filter(value != "AsleepUnspecified") %>%
+    filter(hour(endDate) <= 11) %>%
     arrange(desc(endDate)) %>%
     group_by(date) %>%
     summarise(

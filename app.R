@@ -210,8 +210,9 @@ server <- function(input, output) {
             theme(
                 legend.position="bottom",
                 plot.title = element_text(hjust = 0.5),
-                axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.y = element_text(),
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             )
         
     })
@@ -223,11 +224,13 @@ server <- function(input, output) {
         if (input$WeightUnit == "lb") {
             df_weight <-
                 df_weight %>%
-                mutate(value = if_else(unit == "kg", value * 2.20462, value))
+                mutate(value = if_else(unit == "kg", value * 2.20462, value)) %>%
+                mutate(value = round(value, 1))
         } else {
             df_weight <-
                 df_weight %>%
-                mutate(value = if_else(unit == "lb", value / 2.20462, value))
+                mutate(value = if_else(unit == "lb", value / 2.20462, value)) %>%
+                mutate(value = round(value, 1))
         }
     
         df_weight_table <- 
@@ -277,7 +280,8 @@ server <- function(input, output) {
                 legend.position="bottom",
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             ) 
     })
     
@@ -315,7 +319,8 @@ server <- function(input, output) {
                 legend.position="bottom",
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             )
         
         
@@ -355,7 +360,8 @@ server <- function(input, output) {
                 legend.position="bottom",
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             ) 
         
     })
@@ -417,7 +423,8 @@ server <- function(input, output) {
                 legend.position="bottom",
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             ) 
     })
     
@@ -452,7 +459,8 @@ server <- function(input, output) {
                 legend.position="bottom",
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             ) 
     })
     
@@ -530,6 +538,7 @@ server <- function(input, output) {
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
                 axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
                 legend.position = "none"
             ) 
         
@@ -836,7 +845,8 @@ server <- function(input, output) {
             theme(
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_text(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             ) 
     })
     
@@ -850,8 +860,9 @@ server <- function(input, output) {
             
         df_sleep_bedtime_long %>%
             filter(date >= input$dateRange2Sleep[1], date <= input$dateRange2Sleep[2]) %>%
+            mutate(weekend = if_else(wday(date) %in% c(1, 7), TRUE, FALSE)) %>%
             ggplot(aes(date, y = as_datetime(time, tz = "EST"))) + 
-            geom_point(aes(colour = time_type)) +
+            geom_point(aes(colour = time_type, shape = weekend)) +
             scale_x_date(breaks = scales::breaks_pretty(10)) +
             scale_y_datetime(breaks = scales::breaks_pretty(10)) +
             geom_hline(
@@ -873,7 +884,8 @@ server <- function(input, output) {
             theme(
                 plot.title = element_text(hjust = 0.5),
                 axis.title.y = element_blank(), 
-                axis.title.x = element_text()
+                axis.title.x = element_text(),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             ) 
         
     })
