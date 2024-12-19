@@ -41,6 +41,18 @@ ui <-
                                 startview = 'year', language = 'en', 
                                 weekstart = 1),
                             radioGroupButtons(
+                                inputId = "DateShortcuts",
+                                label = "Date Shortcuts",
+                                direction = "vertical",
+                                choices = c(
+                                    "Custom",
+                                    "1-Month", 
+                                    "3-Months",
+                                    "6-Months",
+                                    "1-Year"
+                                )
+                            ),
+                            radioGroupButtons(
                                 inputId = "WeightUnit",
                                 label = "Unit", 
                                 choices = c("lb", "kg"),
@@ -172,6 +184,35 @@ ui <-
 server <- function(input, output) {
     
     output$weightPlot <- renderPlot({
+        
+        
+        if(input$DateShortcuts == "1-Month") {
+            updateDateRangeInput(inputId = "dateRange2Weight",
+                                 start = max(max(df_watch$date) %m-% months(1),
+                                             min(df_watch$date)),
+                                 end = max(df_watch$date))
+        }
+        
+        if(input$DateShortcuts == "3-Months") {
+            updateDateRangeInput(inputId = "dateRange2Weight",
+                                 start = max(max(df_watch$date) %m-% months(3),
+                                             min(df_watch$date)),
+                                 end = max(df_watch$date))
+        }
+        
+        if(input$DateShortcuts == "6-Months") {
+            updateDateRangeInput(inputId = "dateRange2Weight",
+                                 start = max(max(df_watch$date) %m-% months(6),
+                                             min(df_watch$date)),
+                                 end = max(df_watch$date))
+        }
+        
+        if(input$DateShortcuts == "1-Year") {
+            updateDateRangeInput(inputId = "dateRange2Weight",
+                                 start = max(max(df_watch$date) %m-% months(12),
+                                             min(df_watch$date)),
+                                 end = max(df_watch$date))
+        }
         
         validate(
             need(input$dateRange2Weight[1] <= input$dateRange2Weight[2],
